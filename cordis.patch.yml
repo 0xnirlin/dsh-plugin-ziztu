@@ -1,0 +1,6 @@
+# Ziztu for DeepSeek Harness. One row mounts the Host half; the browser half is
+# declared by package.json (dsh.client) and bound to this row's bare package name.
+- insert:
+    - id: ziztu
+      name: 'dsh-plugin-ziztu'
+      config: {}

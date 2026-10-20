@@ -1,0 +1,41 @@
+{
+  "name": "dsh-plugin-ziztu",
+  "version": "0.1.0",
+  "description": "Ziztu for DeepSeek Harness: plan, write and make micro dramas and anime episodes from your agent. Connects Ziztu's hosted MCP server with your API key and adds a settings page.",
+  "keywords": ["dsh", "dsh-plugin", "deepseek-harness", "mcp", "ziztu", "ai-video", "micro-drama", "anime"],
+  "type": "module",
+  "main": "index.js",
+  "icon": "./icon.png",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.png"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "src",
+    "locale",
+    "icon.png",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0xnirlin/dsh-plugin-ziztu.git"
+  },
+  "bugs": { "url": "https://github.com/0xnirlin/dsh-plugin-ziztu/issues" },
+  "homepage": "https://getziztu.com/connect/deepseek-harness",
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": { "platform": "web", "immediately": true, "inject": [] }
+  },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}
