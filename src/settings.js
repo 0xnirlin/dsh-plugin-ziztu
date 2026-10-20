@@ -1,6 +1,7 @@
 /**
- * Where the plugin keeps the API key and the server address: a small JSON file in
- * the Harness home ($DSH_HOME/ziztu/settings.json, owner read and write only).
+ * Where the plugin keeps the server address, and the API key when the harness has no
+ * credential store: a small JSON file in the Harness home
+ * ($DSH_HOME/ziztu/settings.json, owner read and write only).
  * The key is never logged and never sent back to the browser; the settings page
  * only learns whether a key is set and its last four characters.
  *

@@ -44,7 +44,7 @@ window.__ModuleLoader__.load({
         fromEnv: 'Using the key from your environment or plugin config.',
         removeKey: 'Remove key',
         reconnect: 'Reconnect',
-        privacy: 'The key is stored on this computer only, in your Harness home, and is sent only to the server address below.',
+        privacy: 'The key is stored on this computer only, in the harness credential store, and is sent only to the server address below.',
         askTitle: 'What you can ask',
         ask1: 'Plan a 60 second vertical micro drama about a baker who finds a love letter in the dough. Show me the price before you make anything.',
         ask2: 'Write the script for episode one of an anime about a lighthouse keeper, then turn it into a shot list.',
@@ -84,7 +84,7 @@ window.__ModuleLoader__.load({
         fromEnv: '正在使用环境变量或插件配置中的密钥。',
         removeKey: '移除密钥',
         reconnect: '重新连接',
-        privacy: '密钥只保存在这台电脑的 Harness 主目录中，只会发送到下面的服务器地址。',
+        privacy: '密钥只保存在这台电脑的 Harness 凭据存储中，只会发送到下面的服务器地址。',
         askTitle: '你可以这样问',
         ask1: '策划一部 60 秒的竖屏微短剧：面包师在面团里发现一封情书。动手之前先告诉我价格。',
         ask2: '为一部以灯塔守望者为主角的动漫写第一集剧本，然后拆成分镜表。',
@@ -183,6 +183,7 @@ font-family:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;co
 
       const status = state?.status ?? 'idle'
       const label = { connected: t('s_connected'), connecting: t('s_connecting'), error: t('s_error'), 'no-key': t('s_nokey'), idle: t('s_idle') }[status] ?? t('s_idle')
+      const saved = state?.keySource === 'settings' || state?.keySource === 'credentials'
       const asks = ['ask1', 'ask2', 'ask3', 'ask4', 'ask5']
 
       return h('div', { className: 'zz' },
@@ -214,9 +215,9 @@ font-family:Geist,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;co
             }),
             h('button', { className: 'zz-btn', type: 'submit', disabled: busy || !key.trim() }, busy ? t('saving') : t('save'))),
           state?.hasKey ? h('div', { className: 'zz-row' },
-            h('span', { className: 'zz-p' }, state.keySource === 'settings' ? t('savedKey').replace('{end}', state.keyEnd) : t('fromEnv')),
+            h('span', { className: 'zz-p' }, saved ? t('savedKey').replace('{end}', state.keyEnd) : t('fromEnv')),
             h('button', { className: 'zz-btn zz-2 zz-sm', type: 'button', disabled: busy, onClick: () => run('/reconnect') }, t('reconnect')),
-            state.keySource === 'settings' ? h('button', { className: 'zz-btn zz-2 zz-sm', type: 'button', disabled: busy, onClick: () => run('/settings', { clearKey: true }) }, t('removeKey')) : null) : null,
+            saved ? h('button', { className: 'zz-btn zz-2 zz-sm', type: 'button', disabled: busy, onClick: () => run('/settings', { clearKey: true }) }, t('removeKey')) : null) : null,
           error ? h('p', { className: 'zz-err' }, error) : null,
           h('p', { className: 'zz-p' }, t('privacy'))),
 

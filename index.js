@@ -27,6 +27,8 @@ export const inject = ['tools']
 const SERVER_NAME = 'ziztu'
 const CALL_TIMEOUT_MS = 180_000
 const API = '/api/ziztu'
+/** The name the key goes by in the harness credential store (and in the environment). */
+const CREDENTIAL_NAME = 'ZIZTU_API_KEY'
 
 function packageVersion() {
   try {
@@ -44,6 +46,54 @@ export function apply(ctx, config = {}) {
   let disposers = []
   let client
   let state = { status: 'idle', message: '', tools: [] }
+  let resolved = effective({ config })
+
+  /** The harness credential store, when this composition has one. Looked up at call time. */
+  function store() {
+    try { return ctx.get?.('credentials') } catch { return undefined }
+  }
+
+  /** The key in force: the credential store first (what the settings page saves), then the file, config and environment. */
+  async function loadSettings() {
+    const base = effective({ config })
+    const credentials = store()
+    if (credentials) {
+      try {
+        const hit = await credentials.resolve(CREDENTIAL_NAME)
+        if (hit && typeof hit.value === 'string' && hit.value.trim() !== '') {
+          return { ...base, key: hit.value.trim(), source: hit.source === 'environment' ? 'environment' : 'credentials' }
+        }
+      } catch (error) {
+        logger.warn?.(`ziztu: credential store unavailable: ${error?.message ?? error}`)
+      }
+    }
+    return base
+  }
+
+  async function saveKey(key) {
+    const credentials = store()
+    if (credentials) {
+      try {
+        const info = await credentials.describe(CREDENTIAL_NAME)
+        if (info?.writable !== false) {
+          await credentials.set(CREDENTIAL_NAME, key)
+          writeSettings({ apiKey: '' })
+          return
+        }
+      } catch (error) {
+        logger.warn?.(`ziztu: could not use the credential store, saving to the settings file: ${error?.message ?? error}`)
+      }
+    }
+    writeSettings({ apiKey: key })
+  }
+
+  async function removeKey() {
+    const credentials = store()
+    if (credentials) {
+      try { await credentials.unset(CREDENTIAL_NAME) } catch { /* nothing stored there */ }
+    }
+    writeSettings({ apiKey: '' })
+  }
 
   function dropTools() {
     for (const dispose of disposers) {
@@ -58,7 +108,9 @@ export function apply(ctx, config = {}) {
   async function connect() {
     const mine = ++generation
     dropTools()
-    const { key, url } = effective({ config })
+    resolved = await loadSettings()
+    if (mine !== generation) return state
+    const { key, url } = resolved
     if (!key) {
       state = { status: 'no-key', message: 'Add your Ziztu API key to connect.', tools: [] }
       return state
@@ -94,7 +146,7 @@ export function apply(ctx, config = {}) {
   }
 
   function publicState() {
-    const { key, url, source } = effective({ config })
+    const { key, url, source } = resolved
     return {
       status: state.status,
       message: state.message,
@@ -143,18 +195,19 @@ export function apply(ctx, config = {}) {
       if (route === '/settings') {
         const body = await readJson(req)
         const patch = {}
-        if (body.clearKey === true) patch.apiKey = ''
+        let newKey
         if (typeof body.apiKey === 'string' && body.apiKey.trim() !== '') {
-          const key = body.apiKey.trim()
-          if (!KEY_PATTERN.test(key)) return send(res, 400, { error: 'That does not look like a Ziztu API key. Keys start with sk_sakuga_.' })
-          patch.apiKey = key
+          newKey = body.apiKey.trim()
+          if (!KEY_PATTERN.test(newKey)) return send(res, 400, { error: 'That does not look like a Ziztu API key. Keys start with sk_sakuga_.' })
         }
         if (typeof body.url === 'string') {
           const url = body.url.trim()
           if (url !== '' && url !== DEFAULT_URL && !validUrl(url)) return send(res, 400, { error: 'The server address must start with https://.' })
           patch.url = url === DEFAULT_URL ? '' : url
         }
-        writeSettings(patch)
+        if (Object.keys(patch).length > 0) writeSettings(patch)
+        if (body.clearKey === true) await removeKey()
+        if (newKey) await saveKey(newKey)
         await connect()
         return send(res, 200, publicState())
       }
@@ -165,6 +218,9 @@ export function apply(ctx, config = {}) {
       return send(res, status, { error: status === 500 ? 'internal error' : String(error.message) })
     }
   }
+
+  // If the credential store appears after this plugin loaded, look again so a stored key is picked up.
+  ctx.inject?.(['credentials'], () => { void connect() })
 
   ctx.inject?.(['webServer'], scoped => {
     scoped.effect(() => scoped.webServer.register({ kind: 'prefix', path: API, handler }), 'ziztu: settings routes')

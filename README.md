@@ -5,7 +5,7 @@ Plan, write and make micro dramas and anime episodes from your DeepSeek Harness 
 - Adds 30 tools: create a project, plan an episode with the Director, write and edit scripts, price any step, make first frames, animate shots, make music, export the film, and follow the jobs.
 - Adds a **Ziztu** page to Settings: paste your API key, see the connection status and the tool list, and read a short list of things to ask.
 - Spending stays under your control. Every tool that spends credits needs a `max_credits` cap, anything above 500 credits needs a `confirm`, and `dry_run` returns the price without starting anything. These rules are enforced by Ziztu's API, not by this plugin.
-- The key is stored on your computer only (`$DSH_HOME/ziztu/settings.json`, readable by you alone) and is sent only to the server address in Settings (https://getziztu.com/mcp by default).
+- The key is kept in the harness's own credential store on your computer (`$DSH_HOME/.credentials.yaml`, readable by you alone; the plugin falls back to `$DSH_HOME/ziztu/settings.json` if a composition has no credential store). It is sent only to the server address in Settings (https://getziztu.com/mcp by default).
 - No dependencies. The plugin talks to the server with Node's built-in `fetch`, and its settings page uses the React that the harness already provides.
 
 Licence: MIT. This is a community plugin for DeepSeek Harness. It is made by the Ziztu team and is not made or endorsed by DeepSeek.
@@ -49,7 +49,7 @@ dsh plugin --profile web add /path/to/dsh-plugin-ziztu
    - "Make the first frames for this project with a cap of 200 credits."
    - "What is my credit balance, and what is the status of my jobs?"
 
-Other ways to give the plugin a key, in order of priority: the Settings page, the plugin row's `config` (`apiKey`, and `url` for another server address), then the `ZIZTU_API_KEY` environment variable (`ZIZTU_TOKEN` also works).
+Other ways to give the plugin a key, in order of priority: the Settings page (stored under the name `ZIZTU_API_KEY`), the plugin row's `config` (`apiKey`, and `url` for another server address), then the `ZIZTU_API_KEY` environment variable (`ZIZTU_TOKEN` also works).
 
 ## Notes
 
