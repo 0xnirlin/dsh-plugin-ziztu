@@ -136,3 +136,30 @@ test('fence: loopback only, same origin only', () => {
   assert.equal(rejection({ headers: { host: '127.0.0.1:3080', 'sec-fetch-site': 'cross-site' } }, undefined), 403)
   assert.equal(rejection(ok, { admit: () => ({ rejection: 401 }) }), 401)
 })
+
+test('apply() registers the server tools on ctx.tools and removes them on dispose', async () => {
+  const { server, url } = await fakeServer()
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'zz-home-'))
+  const before = { DSH_HOME: process.env.DSH_HOME, ZIZTU_API_KEY: process.env.ZIZTU_API_KEY, ZIZTU_TOKEN: process.env.ZIZTU_TOKEN }
+  process.env.DSH_HOME = home
+  delete process.env.ZIZTU_API_KEY
+  delete process.env.ZIZTU_TOKEN
+  try {
+    const { apply } = await import('../index.js')
+    const registered = new Map()
+    const effects = []
+    const ctx = {
+      logger: { info() {}, warn() {}, error() {} },
+      tools: { register(def) { registered.set(def.name, def); return () => registered.delete(def.name) } },
+      effect(fn) { effects.push(fn()) },
+    }
+    apply(ctx, { apiKey: GOOD, url })
+    for (let i = 0; i < 50 && registered.size === 0; i++) await new Promise(r => setTimeout(r, 40))
+    assert.deepEqual([...registered.keys()].sort(), ['mcp__ziztu__get_credits', 'mcp__ziztu__quote'])
+    for (const dispose of effects) dispose()
+    assert.equal(registered.size, 0)
+  } finally {
+    for (const [k, v] of Object.entries(before)) { if (v === undefined) delete process.env[k]; else process.env[k] = v }
+    server.close()
+  }
+})
